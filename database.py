@@ -115,6 +115,8 @@ def update_job_status(job_id, new_status):
         updated_job = supabase.table("jobs").update({
             "status": new_status
         }).eq("id", job_id).execute()
+
+        
         return updated_job.data[0]
     except Exception as e:
         raise Exception(f"Failed to update job status: {str(e)}")

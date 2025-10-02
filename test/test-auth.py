@@ -8,15 +8,15 @@ BASE_URL = "http://127.0.0.1:5500"  # Flask server
 def test_register():
     users = [
         {
-            "email": "testprinter@example.com",
+            "email": "testprinter1@example.com",
             "password": "printer123",
-            "name": "Test Printer",
+            "name": "Test Printer 1",
             "role": "printer"
         },
         {
-            "email": "testuser@example.com",
+            "email": "testuser1@example.com",
             "password": "user123",
-            "name": "Test User",
+            "name": "Test User 1",
             "role": "user"
         }
     ]
@@ -30,8 +30,8 @@ def test_register():
 # -------------------------
 def test_login():
     accounts = [
-        {"email": "testprinter@example.com", "password": "printer123"},
-        {"email": "testuser@example.com", "password": "user123"}
+        {"email": "testprinter1@example.com", "password": "printer123"},
+        {"email": "testuser1@example.com", "password": "user123"}
     ]
 
     for acc in accounts:
