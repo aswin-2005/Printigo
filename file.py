@@ -20,6 +20,7 @@ def get_signed_url(filename):
             filename,
             3600
         )
-        return response
+        url = response.get("signedURL")
+        return url
     except Exception as e:
         raise Exception(f"File link generation failed: {str(e)}")

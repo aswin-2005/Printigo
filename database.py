@@ -19,16 +19,16 @@ def get_slots():
             if i["printer_id"] not in slot_list:
                 slot_list[i["printer_id"]] = []
             slot_list[i["printer_id"]].append(i)
-        return slot_list
+        return jsonify({"slots": slot_list}), 200
     except Exception as e:
-        raise Exception(f"Failed to fetch slots: {str(e)}")
+        return jsonify({"error": f"Failed to fetch slots: {str(e)}"}), 500
 
 def get_user_jobs(user_id):
     try:
         jobs = supabase.table("jobs").select("*").eq("user_id", user_id).execute()
-        return jobs.data
+        return jsonify({"jobs": jobs.data}), 200
     except Exception as e:
-        raise Exception(f"Failed to fetch jobs: {str(e)}")
+        return jsonify({"error": f"Failed to fetch jobs: {str(e)}"}), 500
 
 def create_user_job(user_id, slot_id, printer_id, print_options):
     try:
@@ -52,25 +52,32 @@ def create_user_job(user_id, slot_id, printer_id, print_options):
             "print_options": print_options,
             "status": "pending"
         }).execute()
-        return job.data[0]
+        return jsonify({"job": job.data[0]}), 201
     except Exception as e:
-        raise Exception(f"Failed to create job: {str(e)}")
+        return jsonify({"error": f"Failed to create job: {str(e)}"}), 500
 
 def delete_user_job(job_id):
     try:
-        job = supabase.table("jobs").select("*").eq("id", job_id).execute()
-        if not job.data:
-            return None
+        resp = supabase.table("jobs").select("slot_id").eq("id", job_id).execute()
+        if not resp.data:
+            return jsonify({"error": "Job not found"}), 404
+
         supabase.table("jobs").delete().eq("id", job_id).execute()
-        return job.data[0]
+        slot_id = resp.data[0]["slot_id"]
+
+        slot_resp = supabase.table("slots").select("current_jobs").eq("id", slot_id).execute()
+        if slot_resp.data and slot_resp.data[0]["current_jobs"] > 0:
+            supabase.table("slots").update({
+                "current_jobs": slot_resp.data[0]["current_jobs"] - 1
+            }).eq("id", slot_id).execute()
+
+        return jsonify({"message": f"Job {job_id} deleted successfully"}), 200
     except Exception as e:
-        raise Exception(f"Failed to delete job: {str(e)}")
+        return jsonify({"error": f"Failed to delete job: {str(e)}"}), 500
 
 def validate_user(email, password=None, mode="login"):
     try:
-        query = supabase.table("users").select("*")
-        query = query.eq("email", email)
-        
+        query = supabase.table("users").select("*").eq("email", email)
         if mode == "login":
             if not password:
                 return None
@@ -83,7 +90,7 @@ def validate_user(email, password=None, mode="login"):
         else:
             return len(result.data) == 0
     except Exception as e:
-        raise Exception(f"User validation failed: {str(e)}")
+        return jsonify({"error": f"User validation failed: {str(e)}"}), 500
 
 def create_slots(printer_id):
     try:
@@ -96,27 +103,27 @@ def create_slots(printer_id):
                 "max_jobs": 10,
                 "current_jobs": 0
             }).execute()
+        return jsonify({"message": "Slots created successfully"}), 201
     except Exception as e:
-        raise Exception(f"Failed to create slots: {str(e)}")
-
+        return jsonify({"error": f"Failed to create slots: {str(e)}"}), 500
 
 def get_printer_jobs(printer_id):
     try:
         jobs = supabase.table("jobs").select("*").eq("printer_id", printer_id).execute()
-        return jobs.data
+        return jsonify({"jobs": jobs.data}), 200
     except Exception as e:
-        raise Exception(f"Failed to fetch printer jobs: {str(e)}")
+        return jsonify({"error": f"Failed to fetch printer jobs: {str(e)}"}), 500
     
 def update_job_status(job_id, new_status):
     try:
         job = supabase.table("jobs").select("*").eq("id", job_id).execute()
         if not job.data:
-            return None
+            return jsonify({"error": "Job not found"}), 404
+        
         updated_job = supabase.table("jobs").update({
             "status": new_status
         }).eq("id", job_id).execute()
 
-        
-        return updated_job.data[0]
+        return jsonify({"job": updated_job.data[0]}), 200
     except Exception as e:
-        raise Exception(f"Failed to update job status: {str(e)}")
+        return jsonify({"error": f"Failed to update job status: {str(e)}"}), 500
